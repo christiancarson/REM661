@@ -7,9 +7,8 @@
 #libs
 #install.packages("conflicted")
 library(conflicted)
-
-#table of conflicts
-
+library(ggplot2)
+library(dplyr)
 
 ### INPUT ###
 rm(list=ls()) # nolint
@@ -30,19 +29,45 @@ head(data)
 names(data)
 summary(data)
 print(data)
-### LOAD PACKAGES ###
-library()
 
 #pairwise correlations#
 cor(data)
 
-### MODEL 1 ###
-model1 <- glm(CPUE ~ Temperature, data = data, family = gaussian(link = "identity"))
-summary(model1)
+
+# Setup 10 models that can include varying interaction terms, squared terms or nothing, and be fit using different link functions within the Gaussian family.
+#link function takes the process that is driving your dependant variable and translates it into another family (link gaussian - normally distributed -> translates one of several discrete types of data)
+#M1 - CPUE ~ Temperature# #nolint
+M1 <- glm(CPUE ~ Temperature, data = data, family = gaussian(link = "identity"))
+#M2 - CPUE ~ Temperature + WaterLevel #nolint
+M2 <- glm(CPUE ~ Temperature + WaterLevel, data = data, family = gaussian(link = "identity"))
+#M2 - CPUE ~ Temperature + WaterLevel #nolint
+M3 <- glm(CPUE ~ Temperature + WaterLevel + I(Temperature^2), data = data, family = gaussian(link = "identity"))
+#M4 - CPUE ~ Temperature + WaterLevel + I(Temperature^2) + I(WaterLevel^2) #nolint
+M4 <- glm(CPUE ~ Temperature + WaterLevel + I(Temperature^2) + I(WaterLevel^2), data = data, family = gaussian(link = "identity"))
+#M5 - CPUE ~ 
 
 
 
+#AIC Comparison table
+AIC1 <- AIC(M1)
+AIC2 <- AIC(M2)
+AIC3 <- AIC(M3)
+AIC4 <- AIC(M4)
+AIC5 <- AIC(M5)
+AIC6 <- AIC(M6)
+AIC7 <- AIC(M7)
+AIC8 <- AIC(M8)
+AIC9 <- AIC(M9)
+AIC10 <- AIC(M10)
+#compare the model in table
+tab <- data.frame(AIC1, AIC2, AIC3, AIC4, AIC5, AIC6, AIC7, AIC8, AIC9, AIC10)
+#as.numer
 
+#print
+print(tab)
+ #RULE OF THUMB: the model with the lowest AIC value is the best model, but if the difference is less than 2, the models are equally good
+
+######Practice code for GLM########
 #####fish mortality as a function of temperature, fight duration,
 #and air exposure time########
 #define number of observations
@@ -55,7 +80,7 @@ Temp <- rep(18:22, each = N/5) # nolint
 #amount of time catching fish, pulling them out of water, and taking pictures
 AirExposure <- rlnorm(N, -1, 0.2) # nolint #n = n, meanlog = -1, sdlog = 0.2
 
-#simulate model on logit scale
+#simulate model on logit scale, for every minute the fish fights, the probability of being alive decreases by 0.5
 logitAlive <- 1 + -0.5*FightTime + -0.5*Temp + -0.5*AirExposure # nolint # 1 = intercept, -0.5 = coefficient weight, FightTime, Temp, AirExposure, respectively
 #probability of being alive
 pAlive <- plogis(logitAlive) # nolint, plogis = inverse logit function to get probability of being alive
@@ -93,4 +118,5 @@ AIC2 <- AIC(Fit2) # nolint
 
 #compare the model in table
 data.frame(AIC1, AIC2) # nolint
+
 
