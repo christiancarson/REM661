@@ -202,76 +202,81 @@ AIC(M20)
 
 #same models as above but with a gamma distribution and log link
 #M1 = Base model
-M_gamma_1 <- glm(CPUE ~ Temperature + WaterLevel + Year, family=Gamma(link="log"), data=data)
+M21 <- glm(CPUE ~ Temperature + WaterLevel + Year, family=Gamma(link="log"), data=data)
 #M2 = Interaction model with temp and water level
-M_gamma_2 <- glm(CPUE ~ Temperature * WaterLevel + Year, family=Gamma(link="log"), data=data)
+M22 <- glm(CPUE ~ Temperature * WaterLevel + Year, family=Gamma(link="log"), data=data)
 #M3 = Quadratic model with temp being quadratic
-M_gamma_3 <- glm(CPUE ~ Temperature + I(Temperature^2) + WaterLevel + Year, family=Gamma(link="log"), data=data)
+M23 <- glm(CPUE ~ Temperature + I(Temperature^2) + WaterLevel + Year, family=Gamma(link="log"), data=data)
 #M4 <- water level being quadratic
-M_gamma_4 <- glm(CPUE ~ Temperature + WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
+M24 <- glm(CPUE ~ Temperature + WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
 #M5 <- both temp and water level being quadratic or plynomial
-M_gamma_5 <- glm(CPUE ~ Temperature + I(Temperature^2) + WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
+M25 <- glm(CPUE ~ Temperature + I(Temperature^2) + WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
 #M6 = interaction between both temp and water level as a polynomial
-M_gamma_6 <- glm(CPUE ~ Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
+M26 <- glm(CPUE ~ Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
 #M7 = interaction across all, both temp and water level as a polynomial
-M_gamma_7 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * Year, family=Gamma(link="log"), data=data)
+M27 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * Year, family=Gamma(link="log"), data=data)
 #M8 = interaction all but year and  both temp and water level as a polynomial
-M_gamma_8 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
+M28 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
 #M9 = interaction all but year and  both temp and water level as a polynomial and factor for year
-M_gamma_9 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + factor(Year), family=Gamma(link="log"), data=data)
+M29 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + factor(Year), family=Gamma(link="log"), data=data)
 #M10 = interaction all and  both temp and water level as a polynomial and factor for year
-M_gamma_10 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * factor(Year), family=Gamma(link="log"), data=data)
+M30 <- glm(CPUE ~ Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * factor(Year), family=Gamma(link="log"), data=data)
 
 #check residuals
 par(mfrow=c(2,2))
-plot(M_gamma_1)
-plot(M_gamma_2)
-plot(M_gamma_3)
-plot(M_gamma_4)
-plot(M_gamma_5)
-plot(M_gamma_6)
-plot(M_gamma_7)
-plot(M_gamma_8)
-plot(M_gamma_9)
-plot(M_gamma_10)
+plot(M21)
+plot(M22)
+plot(M23)
+plot(M24)
+plot(M25)
+plot(M26)
+plot(M27)
+plot(M28)
+plot(M29)
+plot(M30)
 
 #check AIC
-AIC(M_gamma_1)
-AIC(M_gamma_2)
-AIC(M_gamma_3)
-AIC(M_gamma_4)
-AIC(M_gamma_5)
-AIC(M_gamma_6)
-AIC(M_gamma_7)
-AIC(M_gamma_8)
-AIC(M_gamma_9)
-AIC(M_gamma_10)
+AIC(M21)
+AIC(M22)
+AIC(M23)
+AIC(M24)
+AIC(M25)
+AIC(M26)
+AIC(M27)
+AIC(M28)
+AIC(M29)
+AIC(M30)
 
-#unlike both the gaussian with identity and log link, the gamma distribution with log link seems to have the best AIC and residuals and the best model is M_gamma_6 <- glm(CPUE ~ Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
+#unlike both the gaussian with identity and log link, the gamma distribution with log link seems to have the best AIC and residuals and the best model is M26 <- glm(CPUE ~ Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year, family=Gamma(link="log"), data=data)
 #this model had an AIC of 691, but still the residuals are not great
 #gonna try inverse gaussian with log link for shits and giggles
 
 #Inverse Gaussian GLM with a log links
 #M1 = Base model - Temperature and WaterLevel and Year with a inverse gaussian distribution and log link
-M_ig_1 <- glm(CPUE ~ Temperature + WaterLevel + Year, family=inverse.gaussian(link="log"), data=data)
+M31 <- glm(CPUE ~ Temperature + WaterLevel + Year, family=inverse.gaussian(link="log"), data=data)
 #error: "Error: inner loop 1; cannot correct step size, In addition: Warning messages: 1: step size truncated due to divergence 2: step size truncated due to divergence "
 
 #nvm:) that didn't work
 
 #code adapted from https://www.r-bloggers.com/2019/07/creating-a-summary-table-of-glm-models-using-broom-and-flextable/
 extract_model_info <- function(model, model_name) {
-  model_family <- family(model)$family
-  distribution_type <- ifelse(model_family == "Gamma", "gamma",
+  if (!inherits(model, "glm")) {
+    stop("Model is not a glm object")
+  }
+
+  model_family <- tolower(family(model)$family)
+  distribution_type <- ifelse(model_family == "gamma", "gamma",
                               ifelse(model_family == "gaussian", "gaussian", "other"))
-  link_function <- ifelse(distribution_type == "gamma", "log",
-                          ifelse(distribution_type == "gaussian", "identity", "unknown"))
-  df <- glance(model) %>%
-    mutate(Model = model_name,
-           Formula = paste(as.character(formula(model)), collapse = " "),
-           Distribution = distribution_type,
-           Link = link_function)
+  link_function <- model$family$link
+
+  df <- broom::glance(model) %>%
+    dplyr::mutate(Model = model_name,
+                  Formula = paste(as.character(formula(model)), collapse = " "),
+                  Distribution = distribution_type,
+                  Link = link_function)
+
   df <- df %>%
-    select(Model, Formula, AIC, Distribution, Link)
+    dplyr::select(Model, Formula, AIC, Distribution, Link)
 
   return(df)
 }
@@ -298,16 +303,16 @@ model_summaries <- bind_rows(
   extract_model_info(M17, "M17"),
   extract_model_info(M18, "M18"),
   extract_model_info(M19, "M19"),
-  extract_model_info(M_gamma_1, "M_gamma_1"),
-  extract_model_info(M_gamma_2, "M_gamma_2"),
-  extract_model_info(M_gamma_3, "M_gamma_3"),
-  extract_model_info(M_gamma_4, "M_gamma_4"),
-  extract_model_info(M_gamma_5, "M_gamma_5"),
-  extract_model_info(M_gamma_6, "M_gamma_6"),
-  extract_model_info(M_gamma_7, "M_gamma_7"),
-  extract_model_info(M_gamma_8, "M_gamma_8"),
-  extract_model_info(M_gamma_9, "M_gamma_9"),
-  extract_model_info(M_gamma_10, "M_gamma_10")
+  extract_model_info(M21, "M21"),
+  extract_model_info(M22, "M22"),
+  extract_model_info(M23, "M23"),
+  extract_model_info(M24, "M24"),
+  extract_model_info(M25, "M25"),
+  extract_model_info(M26, "M26"),
+  extract_model_info(M27, "M27"),
+  extract_model_info(M28, "M28"),
+  extract_model_info(M29, "M29"),
+  extract_model_info(M30, "M30")
 )
 
 #code adapted from https://www.r-bloggers.com/2019/07/creating-a-summary-table-of-glm-models-using-broom-and-flextable/
