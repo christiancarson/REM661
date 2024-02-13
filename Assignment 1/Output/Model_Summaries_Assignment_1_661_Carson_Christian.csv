@@ -1,0 +1,30 @@
+"","Model","Formula","AIC","Distribution","Link","deltaAIC"
+"1","M26","~ CPUE Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",691.601466679847,"gamma","log",0
+"2","M28","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",695.621970019145,"gamma","log",4.02050333929742
+"3","M29","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + factor(Year)",701.492545454066,"gamma","log",9.8910787742185
+"4","M27","~ CPUE Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * Year",703.50948010124,"gamma","log",11.9080134213931
+"5","M23","~ CPUE Temperature + I(Temperature^2) + WaterLevel + Year",705.312414150803,"gamma","log",13.7109474709556
+"6","M25","~ CPUE Temperature + I(Temperature^2) + WaterLevel + I(WaterLevel^2) + Year",706.116960117155,"gamma","log",14.5154934373079
+"7","M30","~ CPUE Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * factor(Year)",712.483169265246,"gamma","log",20.8817025853992
+"8","M22","~ CPUE Temperature * WaterLevel + Year",792.782413946014,"gamma","log",101.180947266167
+"9","M21","~ CPUE Temperature + WaterLevel + Year",794.327800782997,"gamma","log",102.72633410315
+"10","M24","~ CPUE Temperature + WaterLevel + I(WaterLevel^2) + Year",794.880130529119,"gamma","log",103.278663849271
+"11","M19","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + factor(Year)",1499.18779490005,"gaussian","log",807.586328220205
+"12","M18","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",1693.22607266474,"gaussian","log",1001.62460598489
+"13","M16","~ CPUE Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",1715.70042819711,"gaussian","log",1024.09896151727
+"14","M15","~ CPUE Temperature + I(Temperature^2) + WaterLevel + I(WaterLevel^2) + Year",1724.6693054143,"gaussian","log",1033.06783873445
+"15","M13","~ CPUE Temperature + I(Temperature^2) + WaterLevel + Year",1739.84141380895,"gaussian","log",1048.2399471291
+"16","M8","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",1748.61544818581,"gaussian","identity",1057.01398150596
+"17","M2","~ CPUE Temperature * WaterLevel + Year",1748.88937632866,"gaussian","identity",1057.28790964882
+"18","M9","~ CPUE Temperature * I(Temperature^2) * WaterLevel + I(WaterLevel^2) + factor(Year)",1752.42573489528,"gaussian","identity",1060.82426821543
+"19","M14","~ CPUE Temperature + WaterLevel + I(WaterLevel^2) + Year",1752.56203109801,"gaussian","log",1060.96056441816
+"20","M6","~ CPUE Temperature + I(Temperature^2) * WaterLevel + I(WaterLevel^2) + Year",1753.98727674484,"gaussian","identity",1062.385810065
+"21","M7","~ CPUE Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * Year",1757.62875136246,"gaussian","identity",1066.02728468261
+"22","M12","~ CPUE Temperature * WaterLevel + Year",1762.66176255793,"gaussian","log",1071.06029587808
+"23","M11","~ CPUE Temperature + WaterLevel + Year",1763.40637783489,"gaussian","log",1071.80491115505
+"24","M3","~ CPUE Temperature + I(Temperature^2) + WaterLevel + Year",1773.58464912958,"gaussian","identity",1081.98318244973
+"25","M1","~ CPUE Temperature + WaterLevel + Year",1774.01577371542,"gaussian","identity",1082.41430703557
+"26","M5","~ CPUE Temperature + I(Temperature^2) + WaterLevel + I(WaterLevel^2) + Year",1774.66384712659,"gaussian","identity",1083.06238044675
+"27","M4","~ CPUE Temperature + WaterLevel + I(WaterLevel^2) + Year",1775.1904929267,"gaussian","identity",1083.58902624686
+"28","M10","~ CPUE Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * factor(Year)",1823.36378664477,"gaussian","identity",1131.76231996493
+"29","M17","~ CPUE Temperature * I(Temperature^2) * WaterLevel * I(WaterLevel^2) * Year",144524.333572455,"gaussian","log",143832.732105775
