@@ -1,0 +1,57 @@
+# Date: 01/29/2024 # nolint
+# Last updated: 01/29/2024
+# Name: Christian Carson
+# Description: Assignment 1 - Generalized linear model - REM 661
+# Notes: #nolint is used to ignore the line length error, its scattered throughout the code
+
+#libs insallation
+#install.packages("conflicted")
+#install.packages("ggplot2")
+#install.packages("dplyr")
+#install.packages("readr")
+#install.packages("MASS")
+#install.packages("pscl")
+#install.packages("flextable")
+#install.packages("textreadr")
+
+#load libraries
+library(conflicted)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(MASS)
+library(pscl)
+library(flextable)
+library(broom)
+conflicts_prefer(dplyr::select)
+
+
+### INPUT ###
+rm(list=ls()) # nolint
+graphics.off()
+getwd()
+
+
+#Numerical Solutions
+#N(t+1) = rN(t)(1-n/k)
+#N0 is the initial population
+N0 <- 2
+#k is the carrying capacity
+k <- 50
+#r is the growth rate with carrying capacity
+r  <- 0.4
+#N is the population at time t
+N <- vector()
+#N[1] is the initial population set point
+N[1] <- N0
+#t is the time, the for loop will run from 2 to 20
+for (t in 2:20) {
+  N[t] <- N[t-1] + r*N[t-1]*(1-N[t-1]/k)
+}
+#make sinisoidal to round out the tail
+
+
+#plot
+?plot
+
+plot(N, type="b", xlab="Time", ylab="Population", main="Exponential Growth")

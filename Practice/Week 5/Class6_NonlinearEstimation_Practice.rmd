@@ -1,0 +1,36 @@
+---
+title: "Class 6 Nonlinear Estimation"
+author: "Christian Carson"
+date: "02/012/2024"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+````
+$C_t = p N_0 - p K_t$
+
+````
+#N_0 is the initial population
+N_0 = 1000
+#p is the proportion of the population that is consumed
+p = 0.1
+
+N_t <- vector()
+N_t[1] <- N_0
+C_t <- vector()
+K_t <- vector()
+K_t[1] <- 0
+
+for(t in 1:25) {
+ C_t[t] <- p * N_t[t]
+ K_t[t+1] <- K_t[t] + C_t[t]
+    N_t[t+1] <- N_t[t]- C_t[t]
+}
+
+plot(C_t~K_t[1:25], ylim =c(0,N_0*p), xlim = c(0, N_0), yaxs = "i", type = "p", col = "blue", xlab = "Kt", ylab = "Ct")
+lin_est <- lm(C_t~K_t[1:25])
+abline(coef(lin_est), col = "red", lwd = 2, lty = 2)
+````    
+
+````
