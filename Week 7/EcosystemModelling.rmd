@@ -1,0 +1,66 @@
+---
+title: "Ecosystem Modelling"
+author: "Christian Carson"
+date: "03/26/2024"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Ecosystem Modelling aims to represent the relationships between species and environmental dynamics. Typically, these models take into accounr multiple species and ecological components. They are commonly based on production equations, which describe the flow of energy and nutrients through the ecosystem.
+$$
+\frac{dN}{dt} = rN(1-\frac{N}{K}) - \frac{N}{\frac{N}{H}+1}
+$$
+Where:
+- N is the population size
+- r is the intrinsic growth rate
+- K is the carrying capacity
+- H is the half-saturation constant
+
+From this model, trophic linkages, transfer efficiences & directions, and environmental drivers and constraints to determine the dynamics of the ecosystem.
+
+These might be included in the model as:
+- Predator-prey interactions
+- Competition
+- Mutualism
+- Parasitism
+- Environmental drivers (temperature, precipitation, etc.)
+- Habitat availability
+- Nutrient availability
+- Life history traits
+
+Some major models include:
+- Biogeochemical models (e.g. Atlantis)
+- Mass balance models (e.g. Ecopath)
+- Dynamic multispecies models (e.g. INVITRO)
+- Bioenergetic models (e.g.OSMOSE)
+
+Ecopath with Ecosim (EwE) is snapshot of the mass balance of an ecosystem. It is a static model that describes the flow of energy and nutrients through the ecosystem. It is based on the trophic levels of the species and the consumption of one species by another.
+Ecosim describes the temporal dynamics of the ecosystem. It is a dynamic model that describes the flow of energy and nutrients through the ecosystem. It is based on the trophic levels of the species and the consumption of one species by another.
+Ecospace describes the spatial dynamics of the ecosystem. It is a spatially explicit model that describes the flow of energy and nutrients through the ecosystem. It is based on the trophic levels of the species and the consumption of one species by another.
+
+The basis of ecopath models is how fast animals grow and who eats who. 
+
+Consumption = production + respiration + unassimilated food + others
+
+$$
+P = Y + M + B + E + BA MO + B
+$$
+Where:
+- P is the production of the species and equals the consumption
+- Y is the yield of the species or the harvest of the species
+- M is the predation mortality of the species
+- B is the biomass of the species
+- E is the excretion of the species
+- BA is the biomass accumulation of the species
+- MO is the other mortality of the species
+
+The outputs of this mass-balance model are:
+- Tropic mass balance model
+- respiration
+- Mortality coefficents 
+- Netwrok analysis (e.g. keystone species, trophic levels, etc.)
+
+The main takeaways from these predation models are that some prey are unavailable to predators, which results in ecosystems being generally stable. 

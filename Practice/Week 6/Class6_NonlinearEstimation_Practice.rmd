@@ -8,6 +8,8 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ````
+State-dynamics model
+
 $C_t = p N_0 - p K_t$
 ```{r}
 #N_0 is the initial population or intercept
@@ -33,7 +35,12 @@ plot(C_t~K_t[1:25], ylim =c(0,N_0*p), xlim = c(0, N_0), yaxs = "i", type = "p", 
 lin_est <- lm(C_t~K_t[1:25])
 abline(coef(lin_est), col = "red", lwd = 2, lty = 2)
 
+#Ct = q No - q Kt
+#slope of the line is -q
+#intercept of the line is q No
+#N0 = intercept/-slope or intercept/q
 p_hat <- -lin_est$coef[2]
+
 N_0_hat <- lin_est$coef[1]/p_hat
 #add p_hat and N_0_hat to the plot at middle right
 text(0.5*N_0, 0.5*N_0*p, labels = paste("p_hat = ", round(p_hat, 2), "\n", "N_0_hat = ", round(N_0_hat, 2)), pos = 3)
@@ -64,7 +71,7 @@ Now I want to run this repeatededly to evaluate bias and precision of the estima
 
 ```{r repeated 3-pass}
 N_0 <- 100
-p <- 0.5
+p <- 0.4 #proportion of animals caught (instead of proportion of animals caught as effor)
 n_rep <- 100
 N_0_vec <- vector()
 
@@ -76,7 +83,7 @@ for(i in 1:n_rep) {
 hist(N_0_vec, main = "Histogram of N_0_vec", xlab = "N_0_hat", col = "black", freq = FALSE, breaks = 20)
 ```
 
-## Schaeffer Production Model
+## Schaeffer Production Model - Observation Model
 The Schaeffer model is a nonlinear model that is used to estimate the intrinsic growth rate of a population. The model is given by the following equation:
 $$
 B_[t+1] = B_t + r B_t (1 - \frac{B_t}{K})
@@ -96,26 +103,124 @@ B_[t+1] = B_t + r B_t (1 - \frac{B_t}{K})- H_t
 $$
 
 ```{r simulate schaeffer}
-"SimSchaeffer" <- function(Ht) {
+"SimSchaefer" <- function(Ht){
     nT <- length(Ht)
+    #instrinsic growth rate
     r <- 0.4
     K <- 1000000
     q <- 0.0001
+    #population at time 0
     B0 <- K
-    #process error
+    #random process error
     v <- rnorm(n = nT, mean = 0, sd = 0.3)
     #observation error
     w <- rnorm(n = nT, mean = 0, sd = 0.1)
-    #Biomass
-    B_t <- vector()
-    #
+    #Biomass at every time step
+    Bt <- vector()
+    #Abundance at every time step
     It <- vector()
     #initial biomass
-    B_t[1] <- B0
+    Bt[1] <- B0
     for(t in 1:40) {
-        It[t] <- B_t[t] * q * exp(w[t])
-        B_t[t+1] <- B_t[t] + r * B_t[t] * (1 - B_t[t]/K) * exp(v[t]) - Ht[t] - It[t]
+        #wt and vt are random errors that account for process and observation error
+        #I_t is a total index of abundance, proportional to total abundance
+        It[t] <- Bt[t] * q * exp(w[t])
+        #the rate at which the population grows will vary log normally: r * Bt[t] * (1 - Bt[t]/K)
+        Bt[t+1] <- Bt[t] + r * Bt[t] * (1 - Bt[t]/K) * exp(v[t]) - Ht[t]
     }
-    return(B_t)
+out <- list()
+out$It <- It
+out$Bt <- Bt
+return(out)
+}#SimSchaefer
+
+Ht <- c(seq(from=150000,to=15000, length=20), seq(from=15000, to=150000, length=20))
+sim <- SimSchaefer(Ht = Ht)
+
+It_hat <- sim$It
+Bt_hat <- sim$Bt
+plot(1:40, Ht, type = "h", lwd = 5, ylab = "Harvest or Biomass", ylim = c(0,1000000) ,xlab = "Year", col = "red")
+lines(1:40, Bt_hat[1:40], type = "l", lwd = 2, col = "black")
+```
+
+Process model that replicates the biomass time series
+
+```{r process}
+#How many animals/biomass are out there?
+    "process" <- function(pars,Ht){
+        r <- exp(pars[1])
+        K <- exp(pars[2])
+        nT <- length(Ht)
+        Bt_hat <- vector()
+        Bt_hat[1] <- K
+#Schaeffer model
+        for(t in 1:nT) {
+            Bt_hat[t+1] <- Bt_hat[t] + r * Bt_hat[t] * (1 - Bt_hat[t]/K) - Ht[t]
+        }
+        return(Bt_hat)
+    }
+```
+
+Now we are going to take the process model output and use it to guess what data must be generated if we had that time series of biomass. 
+
+```{r observation} 
+"observation" <- function(pars, Bt_Hat){
+    q <- exp(pars[3]) #proportionality constant or catchability
+    It_hat <- Bt_Hat * q #gererate the index of abundance
+    return(It_hat[1:40])
+} #observation()
+```
+Now we need to creat a statistical fitting critera, which we will call 'optomize'
+    
+```{r optimize}
+    "optimize" <- function(pars){
+        sigma <- exp(pars[4]) #guessed standard deviation of the observation error
+        #generate process model
+        Bt_hat <- process(pars, Ht)
+        #generate observation model
+        It_hat <- observation(pars, Bt_hat)
+        #calculate the negative log likelihood assuming log normal errors (similar to calculating the sum of squares, but assumes the errors are log normal distributed)
+        Lt <- -dlnorm(It,log(It_hat),sigma, log = TRUE)
+        #this fits probability distribution to the data or gets us likelihood
+    }
+```
+In order to get this working, we need an initial guess at parameters, we need a fitting critera, which we just made:
+
+```{r pars}
+r <- 0.4
+K <- 1000000
+q <- 0.0001
+sigma <- 0.1
+#put the parameters into log space to provide a better search space for the optimizer and a better fit
+pars <- log( c(log(r), log(K), log(q), log(sigma)))
+It <- It_hat
+```
+
+#optimize the parameters
+```{r optim}
+"optimize" <- function(pars){
+sigma <- exp(pars[4])
+Bt_hat <- process(pars, Ht)
+It_hat <- observation(pars, Bt_hat)
+
+#log likelihood calculation assuming log normal errors
+#calls for data, predicted data in log space, and the standard deviation of the observation error in log space
+Lt <- -dlnorm(It, log(It_hat), sigma, log = TRUE)
+
+return(sum(Lt)) 
+
 }
 ```
+
+
+```{r optim}
+fit <- optim(par = pars, fn = optimize, method = "BFGS")
+```
+
+```{r report}
+par_hat <- fit$par
+cat 
+
+
+
+        
