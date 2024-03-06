@@ -30,32 +30,28 @@ where:
 - $\omega_t$ is the error term
 
 Here we will fit a linear model to estimate alpha and beta in log( R/S ) = alpha - beta * S
-
 ```{r Ricker}
-"Ricker" <- function(){
+Ricker <- function(){
   
-  # create a list to fill with outputs from each stock
-  rick <- list()    
+  # Create a list to fill with outputs from each stock
+  rick <- list()
+  results <- data.frame(Stock=character(), Alpha=numeric(), Beta=numeric(), stringsAsFactors=FALSE)
   
-  # loop over stocks
-  for( i in 1:nstock ){
-    # identify parts of data file that corresponds to this stock
-    stock.id   <- data$Stock == stocks[i]
-    # separate out stock-specific recruits and spawners
-    R          <- data$Recruits[ stock.id ]
-    S          <- data$Spawners[ stock.id ]
-    rick[[i]]   <- lm( log( R/S ) ~ S )   # linear regression on transformed Ricker model
-    rick[[i]]$r <- exp( rick[[i]]$fitted.values ) * S # back-transform to original Ricker model
-    stockname <- stocks[i]
+  # Loop over stocks
+  for(i in 1:nstock){
+    stock.id <- data$Stock == stocks[i]
+    R <- data$Recruits[stock.id]
+    S <- data$Spawners[stock.id]
+    
+    fit <- lm(log(R/S) ~ S)  # Linear regression on transformed Ricker model
+    rick[[i]] <- list(fit=fit, r=exp(fit$fitted.values) * S)
+    
+    results <- rbind(results, data.frame(Stock=stocks[i], Alpha=coef(fit)[1], Beta=coef(fit)[2]))
   }
   
-  # return findings so they are preserved outside the function
-  return( rick )
-    return( stockname )
-    results <- data.frame(Stock=stockname, alpha=alpha, beta=beta)
+  return(list(models=rick, coefficients=results))
 }
 ```
-
 Next, we will create a function to estimate parameters and fitted values based on the Larkin model. The Larkin model is written as:
 $$\ln\left(\frac{R_t}{S_t}\right)=\alpha-\beta_0S_t-\beta_1S_{t-1}-\beta_2S_{t-2}-\beta_3S_{t-3}+\omega_t$$
 
@@ -70,47 +66,39 @@ where:
 - $\omega_t$ is the error term
 
 ```{r}
-"Larkin" <- function(){
-  # Fit linear model to estimate alpha and beta in log( R/S ) = alpha - beta * S
-  # create a list to fill with outputs from each stock
-  lark <- list()    
-  for( i in 1:nstock ){
-    stock.id   <- data$Stock == stocks[i]
-    R          <- data$Recruits[ stock.id ]
-    S          <- data$Spawners[ stock.id ]
-    nyr       <- length( R ) 
-    #all recruits except first three years
-    Rt        <- R[ 4:nyr ]
-    #all spawners except for first three years
-    St        <- S[ 4:nyr ]
-    #Spanwers 1 year before current year
-   Sm1 <- S[ 3: (nyr-1) ]
-    #Spanwers 2 years before current year
-    Sm2 <- S[ 2: (nyr-2) ]
-    #Spanwers 3 years before current year
-    Sm3 <- S[ 1: (nyr-3) ]
-    lark[[i]] <- glm( log( Rt/St ) ~ St + Sm1 + Sm2 + Sm3)
-    lark[[i]]$r <- exp( lark[[i]]$fitted.values ) * St
-    alpha <- coef(lark[[i]])[1]
-    beta0 <- coef(lark[[i]])[2]
-    stockname <- stocks[i]
+Larkin <- function(){
+  # Create a list to fill with outputs from each stock
+  lark <- list()
+  results <- data.frame(Stock=character(), Alpha=numeric(), Beta0=numeric(), Beta1=numeric(), Beta2=numeric(), Beta3=numeric(), stringsAsFactors=FALSE)
+  
+  # Loop over stocks
+  for(i in 1:nstock){
+    stock.id <- data$Stock == stocks[i]
+    R <- data$Recruits[stock.id]
+    S <- data$Spawners[stock.id]
+    nyr <- length(R)
+
+    # Ensure enough data points for model fitting
+    if(nyr > 3){
+      Rt <- R[4:nyr]
+      St <- S[4:nyr]
+      Sm1 <- S[3:(nyr-1)]
+      Sm2 <- S[2:(nyr-2)]
+      Sm3 <- S[1:(nyr-3)]
+
+      dat <- data.frame(Rt=Rt, St=St, Sm1=Sm1, Sm2=Sm2, Sm3=Sm3)
+      fit <- glm(log(Rt/St) ~ St + Sm1 + Sm2 + Sm3, data=dat)
+
+      lark[[i]] <- list(fit=fit, r=exp(fit$fitted.values) * St)
+      
+      coefs <- coef(fit)
+      results <- rbind(results, data.frame(Stock=stocks[i], Alpha=coefs[1], Beta0=coefs[2], Beta1=coefs[3], Beta2=coefs[4], Beta3=coefs[5]))
+    }
   }
-  return( lark )
-  return( alpha )
-    return( beta0 )
-    return( stockname )
- results <- data.frame(Stock=stockname, alpha=alpha, beta0=beta0)   
+  
+  return(list(models=lark, coefficients=results))
 }
 ```
 fit1 <- Ricker()
 fit2 <- Larkin()
-
-
-Now we will create a multi-figure plot of the stock-recruitment relationship for the 10 stocks using a loop for each of the 10 stocks. We will need to estimate the 
-α and β parameters using the Ricker, plot the observed data, then estimate the coefficents from Larkin for each using glm() and .
-
-Add the predicted values from the Larkin model to the stock-recruitment plots.
-Refining the Plot: Adjusting the aesthetic properties of your plot (labels, title, scales, etc.) to ensure they are clear and informative.
-
-
 
