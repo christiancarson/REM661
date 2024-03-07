@@ -1,43 +1,67 @@
----
-title: "Ricker and Larkin Models - Assignment 4"
-output: github_document
-author: "Christian Carson"
-date: "03/05/2024"
----
+Ricker and Larkin Models - Assignment 4
+================
+Christian Carson
+03/05/2024
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-Read in the data and set up the procedure section. 
-Data can be read from github at: https://github.com/christiancarson/REM661/blob/main/Assingment%204/Sockeye.data
+Read in the data and set up the procedure section. Data can be read from
+github at:
+<https://github.com/christiancarson/REM661/blob/main/Assingment%204/Sockeye.data>
 
-```{r data}
+``` r
 data <- read.table("https://raw.githubusercontent.com/christiancarson/REM661/main/Assingment%204/Sockeye.data", header=TRUE, sep="\t")
 stocks    <- unique( data$Stock )
 nstock    <- length( stocks )
 ```
 
-Load required libraries and install if necessary. 
+Load required libraries and install if necessary.
 
-```{r load}
-#Load required libraries
+``` r
+# Load required libraries
 library(ggplot2)
+```
+
+    ## Warning: package 'ggplot2' was built under R version 4.3.2
+
+``` r
 library(gridExtra)
+```
+
+    ## Warning: package 'gridExtra' was built under R version 4.3.2
+
+``` r
 library(dplyr)
 ```
+
+    ## Warning: package 'dplyr' was built under R version 4.3.2
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following object is masked from 'package:gridExtra':
+    ## 
+    ##     combine
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+\#()=-S_t+\_t
 
 The Ricker model is written as:
 $$\ln\left(\frac{R_t}{S_t}\right)=\alpha-\beta S_t+\omega_t$$
 
-where:
-- $R_t$ is the number of recruits in year $t$
-- $S_t$ is the number of spawners in year $t$
-- $\alpha$ is the intercept
-- $\beta$ is the slope
-- $\omega_t$ is the error term
+where: - $R_t$ is the number of recruits in year $t$ - $S_t$ is the
+number of spawners in year $t$ - $\alpha$ is the intercept - $\beta$ is
+the slope - $\omega_t$ is the error term
 
-Here we will fit a linear model to estimate alpha and beta in log( R/S ) = alpha - beta * S
-```{r Ricker}
+Here we will fit a linear model to estimate alpha and beta in log( R/S )
+= alpha - beta \* S
+
+``` r
 Ricker <- function() {
   #Here we create a list to iterate over each stock
   rick <- list()
@@ -78,20 +102,19 @@ Ricker <- function() {
   return(list(models = rick, coefficients = results))
 }
 ```
-Next, we will create a function to estimate parameters and fitted values based on the Larkin model. The Larkin model is written as:
+
+Next, we will create a function to estimate parameters and fitted values
+based on the Larkin model. The Larkin model is written as:
 $$\ln\left(\frac{R_t}{S_t}\right)=\alpha-\beta_0S_t-\beta_1S_{t-1}-\beta_2S_{t-2}-\beta_3S_{t-3}+\omega_t$$
 
-where:
-- $R_t$ is the number of recruits in year $t$
-- $S_t$ is the number of spawners in year $t$
-- $\alpha$ is the intercept
-- $\beta_0$ is the slope for the current year
-- $\beta_1$ is the slope for the previous year
-- $\beta_2$ is the slope for the year before the previous year
-- $\beta_3$ is the slope for the year before the year before the previous year
-- $\omega_t$ is the error term
+where: - $R_t$ is the number of recruits in year $t$ - $S_t$ is the
+number of spawners in year $t$ - $\alpha$ is the intercept - $\beta_0$
+is the slope for the current year - $\beta_1$ is the slope for the
+previous year - $\beta_2$ is the slope for the year before the previous
+year - $\beta_3$ is the slope for the year before the year before the
+previous year - $\omega_t$ is the error term
 
-```{r larkin}
+``` r
 Larkin <- function(){
   # Create a list to fill with outputs from each stock
   lark <- list()
@@ -108,9 +131,7 @@ Larkin <- function(){
     if(nyr > 3){
       Rt <- R[4:nyr]
       St <- S[4:nyr]
-      Sm1 <- S[
-        
-      ]
+      Sm1 <- S[3:(nyr-1)]
       Sm2 <- S[2:(nyr-2)]
       Sm3 <- S[1:(nyr-3)]
 
@@ -128,8 +149,7 @@ Larkin <- function(){
 }
 ```
 
-
-```{r plot, fig.width=15, fig.height=15}
+``` r
 # Call the Ricker and Larkin functions
 rick_results <- Ricker()
 lark_results <- Larkin()
@@ -153,5 +173,25 @@ plots <- lapply(1:nstock, function(i) {
 
 # Arrange all plots in a grid sized for a html page
 allplots <- gridExtra::grid.arrange(grobs = plots, ncol = 3, bottom="Note: Recruitment/Spawner data from 10 Fraser Soxkeye stocks from 1957 to 2018. /n Observed data are shown as black dots; Ricker model predictions are shown as red triangles; and Larkin model predictions are green squares.", top="Stock-recruitment plots for 10 Fraser River Sockeye salmon stocks.")
+```
+
+![](Assignment_4_files/figure-gfm/plot-1.png)<!-- -->
+
+``` r
 print(allplots)
 ```
+
+    ## TableGrob (6 x 3) "arrange": 12 grobs
+    ##     z     cells    name                grob
+    ## 1   1 (2-2,1-1) arrange      gtable[layout]
+    ## 2   2 (2-2,2-2) arrange      gtable[layout]
+    ## 3   3 (2-2,3-3) arrange      gtable[layout]
+    ## 4   4 (3-3,1-1) arrange      gtable[layout]
+    ## 5   5 (3-3,2-2) arrange      gtable[layout]
+    ## 6   6 (3-3,3-3) arrange      gtable[layout]
+    ## 7   7 (4-4,1-1) arrange      gtable[layout]
+    ## 8   8 (4-4,2-2) arrange      gtable[layout]
+    ## 9   9 (4-4,3-3) arrange      gtable[layout]
+    ## 10 10 (5-5,1-1) arrange      gtable[layout]
+    ## 11 11 (1-1,1-3) arrange text[GRID.text.384]
+    ## 12 12 (6-6,1-3) arrange text[GRID.text.385]
