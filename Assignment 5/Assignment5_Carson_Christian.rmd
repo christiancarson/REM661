@@ -1,0 +1,117 @@
+---
+title: "Assignment 5 - Prawns"
+output: github_document
+author: "Christian Carson"
+date: "03/25/2024"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Introduction
+
+This document models the population dynamics of spot prawns using Beverton-Holt recruitment model. The recruitment model equation is given by:
+
+$$
+N_{t1,t} = \frac{\alpha \cdot S_{pt-1}}{1 + \beta \cdot S_{pt-1}}
+$$
+
+where:
+- \(N_{t1,t}\) is the number of new recruits at time \(t\),
+
+- \(\alpha\) is the maximum recruitment rate,
+
+- \(\beta\) is the rate at which recruitment increases with the number of spawning prawns,
+
+- \(S_{pt-1}\) is the number of spawners at time \(t-1\).
+
+
+```{r}
+#total number of time steps, 3 months each covering 10 years. So (10*12)/3 = 40
+nT <- 40
+#create a function that will model the prawn population over time; MR is the mortality rate due to release after being caught, E is the fishing effort in terms of traps deployed
+PrawnModel <- function(MR=0, E=400){
+#base of the Beverton-holt model, where alpha is the maximum number of prawns that can be caught
+alpha <- 1000
+#beta is the rate at which the number of prawns caught increases with effort
+beta <- 1e-3
+#q is the catchability of the prawns
+q <- 0.001
+# assume 3-month time-steps
+#p represents the transition rates between each life stage
+p <- c( 1/5, 1/4, 1/3, 1, 1/2 )
+#s represents the survival rates of each life stage, the last is 0 because the female prawns die after spawning
+S <- c( 0.5, 0.55, 0.6, 0.6, 0.6, 0.0 )
+#N0 represents the initial number of prawns in each life stage,the last is 0 because the female prawns die after spawning
+N0 <- c( 1000000, 175000, 39000, 10000, 5000, 0 )
+#seL represents the selectivity of the prawns at each life stage, or how likely they are to be caught
+sel <- c( 0, 0.1, 0.3, 0.7, 1, 0.8 )
+#prel represents the probability of a prawn being released after being caught, which modifies the survival rates below
+prel <- c( 0, 0, 0, 0, 1, 0 )
+#S represents the survival rates of each life stage. S is a product of 1 minus the catchabiliy multiplied by the effort, the selectivity, 1 minues the probability of being released, and plus the probability of mortality due to release
+S <- S * (1- q * E * sel * ((1 - prel) + prel*MR ))
+#setup the matrices to store the results for each time step
+Nt <- matrix(nrow=nT,ncol=6)
+Ct <- matrix(nrow=nT,ncol=6)
+#initialize the first row of the matrices with the initial values from N0
+Nt[1,] <- N0
+#calculate the intial catch for the first time step based on the initial number of prawns, the catchability, the effort, and the selectivity
+Ct[1,] <- Nt[1,]*q*E*sel
+#setup the vectors for the spawner abundance and index, use "numeric" to ensure they dont get converted to logical
+Spawn <- vector("numeric",nT)
+SI <- vector("numeric",nT)
+#initialize the spawning population and SI for the first time step, where spawn is Nt for the 5th stage, multiplied by the survival rate for the 5th stage, and the probability of being caught for the 5th stage
+Spawn[1] <- Nt[1,5] * S[5] * p[5]
+#initialize the spawner index for the first time step, which is the catch for the 5th stage divided by the effort (constant at 400)
+SI[1] <- Ct[1,5] / E
+#start the for loop for t in 2 to nT because we have already calculated the first time step, nT will go to 40 for the 3 month time steps
+for (t in 2:nT) {
+    # Beverton-Holt recruitment for new immatures based on spawners
+    Nt[t,1] <- alpha * Spawn[t-1] / (1 + beta * Spawn[t-1])
+    
+    # Transitioning and surviving through life stages
+    for (stage in 2:5) {
+      Nt[t,stage] <- Nt[t-1,stage-1] * S[stage-1]
+    }
+    
+    # Females after releasing eggs (typically don't survive long)
+    Nt[t,6] <- Nt[t-1,5] * S[5]
+    
+    Ct[t,] <- Nt[t,] * q * E * sel  # Calculate catch
+    Spawn[t] <- Nt[t,5] * S[5]      # Update spawner abundance
+    SI[t] <- Ct[t,5] / E            # Update SI
+  }
+  
+  Phi <- Spawn[nT] / Nt[nT,1]  # Ratio of spawners to immature at the final time step
+  
+  out <- list(Spawn = Spawn, SI = SI, Ct = Ct, Nt = Nt, Phi = Phi)
+  return(out)
+}
+
+#this is our base model with no mr or fishing effort, its takes the output of the PrawnModel function and the spawners per immature prawn for each time step
+Phi0 <- PrawnModel(MR = 0, E = 0)$Phi
+#now we use seq to create a sequence of mr from 0 to 1 in increments of 0.01 to model the effect of mr
+MR_values <- seq(0, 1, by = 0.01)
+#empty vectors to store the spawning potential ratio and spawner index values for each mr
+SPR_values <- numeric(length(MR_values))
+SI_values <- numeric(length(MR_values))
+
+#iterate through the mr values and calculate the spawning potential ratio and spawner index for each mr
+for (i in seq_along(MR_values)) {
+#set the mr value for the model
+MR <- MR_values[i]
+#initiate the model with the mr value and store the output
+model_out <- PrawnModel(MR = MR, E = 400)
+#store the spawners per immature prawn at the final time step for that mr
+PhiF <- model_out$Phi
+#store the spawning potential ratio for that mr, ratio of phiF to phi0
+SPR_values[i] <- PhiF / Phi0
+#store the spawner index for that mr, we use tail to get the last value in the vector
+SI_values[i] <- tail(model_out$SI, 1)
+}
+
+print(SPR_values)
+print(SI_values)
+print(MR_values)
+
+```

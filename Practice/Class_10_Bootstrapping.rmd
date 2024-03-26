@@ -1,0 +1,164 @@
+---
+title: "Bootstrapping"
+author: "Christian Carson"
+date: "03/18/2023"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Bootstrapping Background
+Bootstrapping takes a sample of data and resamples it with replacement to create a distribution of sample statistics. This is useful when the sample size is small and the population distribution is unknown. The bootstrap distribution can be used to estimate the standard error, confidence intervals, and hypothesis tests.
+
+## Bootstrapping Example
+Let say we sample 20 birds at different elevations; is there a relationship between metabolic rate and elevation? We can use bootstrapping to estimate the standard error and confidence intervals for the slope of the relationship.
+
+Let's start by creating a sample of 20 birds at different elevations and their metabolic rates.
+
+```{r simulate}
+library(ggplot2)
+nsample <- 20
+#start from a pseudo-random seed, which is a starting point for the random number generator
+set.seed(999)
+#set the intercept and slope for the relationship between metabolic rate and elevation
+sim_intercept <- 0.2
+#negative slope because metabolic rate decreases with increasing elevation
+sim_slope <- -0.0002
+#simulate the elevation and metabolic rate using runif(), which generates random numbers from a uniform distribution
+elevation <- runif(nsample, min = 0, max = 5000)
+#simulate the metabolic rate as a linear function of elevation
+metabolic_rate <- sim_intercept + sim_slope * elevation
+#add some random noise to the metabolic rate for each bird
+obs_metabolic_rate <- metabolic_rate + rnorm(nsample, mean = 0, sd = 0.1)
+#plot the relationship between elevation and metabolic rate
+metDF <- data.frame(elevation, obs_metabolic_rate)
+#use geom_point() to add the data points to the plot and geom_smooth() to add a linear regression line (geom_smooth does not give confidence intervals but instead uses the standard error of the slope to estimate the confidence interval)
+g1 <- ggplot(metDF, aes(x = elevation, y = obs_metabolic_rate)) + geom_point() + geom_smooth(method = "lm")
+#now we will use the lm() function to fit a linear model to the data and extract the slope and intercept
+lin_fit <- lm (formula = obs_metabolic_rate ~ elevation, data = metDF)
+g1 <- g1 + geom_line(mapping = aes(x = elevation, y = fitted(lin_fit)), color = "red")
+g1
+```
+
+#
+```
+
+## Bootstrapping by brute force
+Instead of using a package to perform bootstrapping, we can write our own function to resample the data and estimate the slope of the relationship between metabolic rate and elevation. This is called "brute force" bootstrapping because it involves resampling the data many times and calculating the slope each time.
+
+For the bootstrapping, we will select from within a defined random sample within the range of the original sample. 
+```{r bootstrap}
+boot_pars <- list(coefficients=matrix(ncol=2, nrow=1000), fitted=matrix(ncol=nsample, nrow=1000))
+#for loop to resample the data 1000 times and fit a linear model to each resampled dataset.
+for(i in 1:1000){
+    #first we sample from the original dataset for the total length of the original dataset and replace the original dataset with the new sample
+    boot_loc <- sample(x=1:nsample, size=20, replace=TRUE)
+    #fit a linear model to the resampled data
+    boot_lm <- lm(obs_metabolic_rate~elevation, data=metDF[boot_loc,])
+    #store the coefficients and fitted values from the linear model, we want row i and all columns
+    boot_pars$coefficients[i,] <- coef(boot_lm)
+    #now store the metabolism values that we predict will be there
+    boot_pars$fitted[i,] <- fitted(boot_lm)
+}
+
+#now we will make a df of the coefficients and fitted values
+boot_pars_df <- data.frame(label = rep(c("intercept", "slope"), each=1000), value = as.vector(boot_pars$coefficients))
+
+#plot the distribution of the slope over two histograms with the first being the slope and the second being the intercept using facet_wrap
+ggplot(boot_pars_df, aes(x=value)) + geom_histogram() + facet_wrap(~label, 
+#set the scales to free so that the histograms are not forced to be the same size
+scales="free_x")
+#the standard deviation represnts the central 66% of the data and the standard error is the standard deviation divided by the square root of the sample size, in this case 20
+#if we compare this output to the 
+```
+## Import Data from github
+
+```{r data}
+data <- read.table("https://raw.githubusercontent.com/christiancarson/REM661/main/Assingment%204/Sockeye.data", header=TRUE, sep="\t")
+stocks    <- unique( data$Stock )
+nstock    <- length( stocks )
+```
+## Load libraries
+
+Load required libraries and install if necessary. 
+
+```{r load}
+#Load required libraries
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+library(gt)
+```
+
+## Plot Sockeye
+
+```{r plotSockeye}
+data_adams <- data %>% filter(Stock == "Adams")
+nyr <- nrow(data_adams)
+#starting the 4th year to the last year, we will store the spawners in a new variable
+S <- data_adams[4:nyr, 'Spawners']
+#now we get the spawners in the previous year by subtracting 1 from the year
+Sm1 <- data_adams[4:nyr-1, 'Spawners']
+Sm2 <- data_adams[4:nyr-2, 'Spawners']
+Sm3 <- data_adams[4:nyr-3, 'Spawners']
+#we don't go back more than 4 years as they life cycle is 4 years
+#now we will get the log recruitment, which is the number of fish that return to spawn. We cal
+logRS <- log(data_adams[4:nyr, 'Recruits']/S)
+#now we will make a df of the data
+df <- data.frame(logRS, S, Sm1, Sm2, Sm3)
+#now we will fit a linear model to the data
+glmfit <- glm(formula = logRS ~ S + Sm1 + Sm2 + Sm3, data = df)
+#now we will get the coefficients of the model
+coef(glmfit)
+
+
+"questions" <- function(data, indicies){
+    subdata <- data[indicies,]
+    fit <- glm(formula = logRS ~ S + Sm1 + Sm2 + Sm3, data = subdata)
+    coef <- vector()
+    coef[1] <- exp(fit$coefficients[1])
+    coef[2:5] <- -fit$coefficients[2:5]
+
+    newdata <- data.frame(logRS = NA, S = 11e-6, Sm1 = 1312e-6, Sm2 = 259855e-6, Sm3 = 8284e-6)
+
+    pred <- exp(predict(fit, newdata = newdata))*newdata$S*1e6
+
+out <- vector(coef = coef, pred = pred)
+return(out)
+}
+
+require(boot)
+results <- boot(data = df, statistic = questions, R = 1000)
+mean <-- vector()
+lower <- vector()
+upper <- vector()
+results
+
+for (i in 1:6){
+  ci <- boot.ci(results, type = "basic", index = i)
+    mean[i] <- ci$t0
+    lower[i] <- ci$basic[4]
+    upper[i] <- ci$basic[5]
+}
+
+plotDF <- data.frame(parameter=c('alpha', 'beta0', 'beta1', 'beta2', 'beta3', 'Prediction'),
+plot=c(rep(1,5),2), 
+Mean=mean,
+Lower=lower,
+Upper=upper)
+
+ggplot(data=plotDF, aes(x=parameter, y=Mean)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=Lower, ymax=Upper), width=0.2) +
+  geom_hline(yintercept=0, linetype="dashed") +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  labs(title="Bootstrapped Estimates of Parameters and Prediction",
+       x="Parameter",
+       y="Estimate")
+```

@@ -1,0 +1,127 @@
+---
+title: "Stage structured models"
+author: "Brett van Poorten"
+date: "2024-03-10"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We have talked about logistic models, and made specific mention of the fact that they assume no structure to the population. This means that all biomass in the population is part of the reproductive population. For many applications, this is fine, but if you think of the time lags between an animal being born and when it is reproductive, this becomes problematic, and may lead to inaccurate estimates of how quickly the population might recover or decline. 
+
+Therefore, the next step in our modelling journey is to learn about linked models, which is where we explicitly subdivide the model of interest into multiple sub-components. Linked models are very common. They include things like stage-structured population models where you might have a juvenile stage and an adult stage, age-structured models where organisms transition from one age to the next at regular intervals, ecosystem models where different organisms interact through predation, competition, mutualism, or parasitism, or social-ecological systems models where one or more ecological population is affected by one or more human population or system. 
+
+We will start by talking about stage-structured models. Here, organisms are born into a young stage and a portion of them will transition to the next stage each time step, another proportion will stay in the same stage, and the rest will die. 
+
+Stage-structured models can be used to represent a wide range of species, including all types of vertebrates, invertebrates, plants, etc. We will preface this by modelling a population of European green crab (*Carcinus maenas*), which in North America are an invasive species found along the Atlantic and Pacific coasts. 
+
+For this to work, we need to define the transition probabilities from each stage to the next, and the mortality rate of each stage. The number of stages you include should be only as many as necessary because the more stages, the more parameters, and uncertainty in all parameters means greater uncertainty in the model outcome. Let's assume we have three stages: a larval stage, a juvenile stage, and an adult stage. We also need to define the length of the time-step. Let's assume each time-step is 1 month long. The transition probability is often easy to guess at - if you know how long each stage is, the transition probability is the inverse of this time. So if the larval stage lasts 3 months on average, then 1/3 of all larval animals will transition to juveniles in each time-step. 
+
+In real populations, there needs to be a negative feedback mechanism, which allows the population to recover after experiencing variation in their environment. We will incorporate the familiar logistic model to represent the relationship between the number of adults $A_t$ and the subsequent number of larvae $L_t$: 
+\begin{equation}
+\tag{1}
+L_t = L_{t-1} \cdot S_L \cdot \left( 1-p_{LJ} \right) + A_t \cdot E_{max} \left( 1-\frac{A_t}{A_{max}}\right)
+\end{equation}
+
+Then, the number of juveniles and adults in each time-step is modelled as:
+\begin{equation}
+\tag{2}
+J_t = L_{t-1} \cdot S_L \cdot p_{LJ} + J_{t-1} \cdot S_J \left( 1-p_{JA}\right)
+\end{equation}
+\begin{equation}
+\tag{3}
+A_t = J_{t-1} \cdot S_J \cdot p_{JA} + A_{t-1} \cdot S_A
+\end{equation}
+
+```{r pars}
+dt   <- 1        # time-step: 1 month
+nT   <- 1200      # 1200 months, or 100 years
+
+p_LJ = 1/3       # transition probability from larvae to juvenile
+p_JA = 1/9       # transition probability from juvenile to adult
+S_L = 0.2        # survival of larvae
+S_J = 0.4        # survival of juveniles
+S_A = 0.7        # survival of adults
+E_max = 100      # maximum number of eggs laid and surviving to larvae
+A_max = 1000     # adult abundance in which larvae survival drops to zero
+q = 0.001        # catchability of trap gear (proportion removed per unit effort)
+```
+
+Now, we can generate a population. Let's start by simulating the population if we do not fish. Lets start by assuming there are only 10 adults in the first time-step
+
+```{r equil}
+require( ggplot2 )
+
+"Simulate_Stage" <- function( EL=0, EJ=0, EA=0 ){
+  Lt <- vector()
+  Jt <- vector()
+  At <- vector()
+  
+  Lt[1] <- 0
+  Jt[1] <- 0
+  At[1] <- 10
+  
+  S_L <- S_L * (1-EL*q)
+  S_J <- S_J * (1-EJ*q)
+  S_A <- S_A * (1-EA*q)
+  
+  for( t in 2:nT ){
+    Lt[t] <- At[t-1]*E_max*(1-At[t-1]/A_max) + Lt[t-1] * S_L * (1-p_LJ)
+    Jt[t] <- Lt[t-1] * S_L * p_LJ + Jt[t-1] * S_J * ( 1-p_JA )
+    At[t] <- Jt[t-1] * S_J * p_JA + At[t-1] * S_A
+  }
+  
+  out <- list()
+  out$Lt = Lt
+  out$Jt = Jt
+  out$At = At
+  return(out)
+}
+
+sim <- Simulate_Stage()
+dat <- data.frame(
+  time=(1:nT)/12,
+  stage=c(rep("Larvae",nT), rep("Juvenile",nT), rep("Adult",nT)),
+  Abundance=c(sim$Lt,sim$Jt,sim$At)
+)
+
+ggplot( data=dat, aes( x=time, y=Abundance, group=stage )) +
+  geom_line( linewidth=1.5, colour="red" ) +
+  facet_wrap( ~ stage, scales="free_y" ) + 
+  theme_classic( base_size=14) 
+```
+
+This population increases until it reaches equilibrium. Since this is a closed-form equation, we can actually calculate the solution to Larve, Juveniles, and Adults (but we won't)
+
+Now that we have a functional model, we can explore some policy alternatives. 
+
+## QUESTION: What is the most efficient way (*e.g.*, lowest total effort) to remove European green crab from the environment?
+
+```{r removal}
+sim_L <- sim_J <- sim_A <- vector()
+E <- seq( 0, 1000, length=101 )
+for( i in 1:101 ){
+  sim_L[i] <- Simulate_Stage(EL=E[i])$At[nT]
+  sim_J[i] <- Simulate_Stage(EJ=E[i])$At[nT]
+  sim_A[i] <- Simulate_Stage(EA=E[i])$At[nT]
+} # i
+
+depleteDF <- data.frame(
+  Effort = E, 
+  Larvae = sim_L, 
+  Juveniles = sim_J, 
+  Adults = sim_A
+)
+
+ggplot( data=depleteDF, mapping=aes( x=Effort )) +
+  geom_line( aes( y=Larvae ), colour="black", linewidth=1.5 ) +
+  geom_line( aes( y=Juveniles ), colour="red", linewidth=1.5 ) +
+  geom_line( aes( y=Adults ), colour="blue", linewidth=1.5 ) + 
+  theme_classic( base_size=14 )
+  
+
+```
